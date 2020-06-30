@@ -45,8 +45,20 @@ def hash_image(img_path):
 #
 def lambda_handler(event, context):
     #src_filename ="http://static.cricinfo.com/db/PICTURES/CMS/263600/263697.20.jpg"
-    src_filename =event.get("name",None)
+    src_filename =event.get("name", None)
+    h = event.get("hash", None)
+
+    filename_set = os.path.splitext(src_filename)
+    basename = filename_set[0]
+    ext = filename_set[1]
+
     down_filename='/tmp/my_image{}'.format(ext)
+    conv_filename='/tmp/sketchify{}'.format(ext)
+    if os.path.exists(down_filename):
+        os.remove(down_filename)
+    if os.path.exists(conv_filename):
+        os.remove(conv_filename)
+
     #
     # s3 = boto3.resource('s3')
     #
@@ -68,12 +80,12 @@ def lambda_handler(event, context):
     # Reading image to buffer.
     #
     s = imageio.imread(down_filename)
-    h = hash_image(down_filename)
+    #h = hash_image(down_filename)
 
     #
     # Split basename and extension from filename.
     #
-    filename_set = os.path.splitext(s)
+    filename_set = os.path.splitext(src_filename)
     basename = filename_set[0]
     ext = filename_set[1]
     sketchify_filename='public/{}/sketchify{}'.format(h, ext)
@@ -87,25 +99,23 @@ def lambda_handler(event, context):
     #
     # Grayscale.
     #
-    b = scipy.ndimage.filters.gaussian_filter(i,sigma=10)
-    r= dodge(b,g)
+    b = scipy.ndimage.filters.gaussian_filter(i, sigma=10)
+    r = dodge(b, g)
 
     #
     # Save the converted image to a local file.
     #
-    if os.path.exists(down_filename):
-        os.remove(down_filename)
-
-    plt.imsave(down_filename, r, cmap='gray', vmin=0, vmax=255)
+    plt.imsave(conv_filename, r, cmap='gray', vmin=0, vmax=255)
 
     #
     # s3 = boto3.client('s3')
     #
-    s3.upload_file(down_filename, BUCKET_NAME, sketchify_filename)
+    s3.upload_file(conv_filename, BUCKET_NAME, sketchify_filename)
 
     images = {
         kSKETCHIFY : S3_URL.format(bucketName = BUCKET_NAME, keyName = sketchify_filename)
     }
+
     return {
         "statusCode": 200,
         "body": {
