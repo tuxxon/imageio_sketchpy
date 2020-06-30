@@ -28,3 +28,4 @@ b = scipy.ndimage.filters.gaussian_filter(i,sigma=10)
 r= dodge(b,g)
 
 plt.imsave('img2.png', r, cmap='gray', vmin=0, vmax=255)
+plt.imsave('img2.jpg', r, cmap='gray', vmin=0, vmax=255)
