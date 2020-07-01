@@ -45,6 +45,9 @@ def hash_image(img_path):
 #
 def lambda_handler(event, context):
     #src_filename ="http://static.cricinfo.com/db/PICTURES/CMS/263600/263697.20.jpg"
+
+    print("[DEBUG] event = {}".format(event))
+
     src_filename =event.get("name", None)
     h = event.get("hash", None)
 
