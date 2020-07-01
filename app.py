@@ -11,10 +11,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import scipy.ndimage
+import time
 
 
 S3_URL = "https://{bucketName}.s3.ap-northeast-2.amazonaws.com/{keyName}"
-kSKETCHIFY = 'sketchify'
+DEST_S3_URL = "https://{bucketName}.s3.ap-northeast-2.amazonaws.com/{keyName}?t={timeStamp}"
 
 
 def dodge(front,back):
@@ -49,11 +50,13 @@ def lambda_handler(event, context):
     print("[DEBUG] event = {}".format(event))
 
     src_filename =event.get("name", None)
-    h = event.get("hash", None)
+    #h = event.get("hash", None)
+    sigma = event.get("sigma", 10)
 
     filename_set = os.path.splitext(src_filename)
     basename = filename_set[0]
     ext = filename_set[1]
+    h = basename.split("/")[0]
 
     down_filename='/tmp/my_image{}'.format(ext)
     conv_filename='/tmp/sketchify{}'.format(ext)
@@ -88,9 +91,9 @@ def lambda_handler(event, context):
     #
     # Split basename and extension from filename.
     #
-    filename_set = os.path.splitext(src_filename)
-    basename = filename_set[0]
-    ext = filename_set[1]
+    # filename_set = os.path.splitext(src_filename)
+    # basename = filename_set[0]
+    # ext = filename_set[1]
     sketchify_filename='public/{}/sketchify{}'.format(h, ext)
 
     #
@@ -102,7 +105,7 @@ def lambda_handler(event, context):
     #
     # Grayscale.
     #
-    b = scipy.ndimage.filters.gaussian_filter(i, sigma=10)
+    b = scipy.ndimage.filters.gaussian_filter(i, sigma=sigma)
     r = dodge(b, g)
 
     #
@@ -116,12 +119,19 @@ def lambda_handler(event, context):
     s3.upload_file(conv_filename, BUCKET_NAME, sketchify_filename)
 
     images = {
-        kSKETCHIFY : S3_URL.format(bucketName = BUCKET_NAME, keyName = sketchify_filename)
+        "source" : S3_URL.format(
+            bucketName = BUCKET_NAME, 
+            keyName = src_filename
+        ),
+        "params" : j,
+        "dest" : DEST_S3_URL.format(
+            bucketName = BUCKET_NAME, 
+            keyName = sketchify_filename,
+            timeStamp = time.time()
+        )        
     }
 
     return {
         "statusCode": 200,
-        "body": {
-            "images": images
-        },
+        "body": {"images": images }
     }
