@@ -7,6 +7,7 @@ import boto3
 import botocore
 import hashlib
 import imageio
+import json
 import numpy as np
 import matplotlib.pyplot as plt
 import os
@@ -52,6 +53,7 @@ def lambda_handler(event, context):
     src_filename =event.get("name", None)
     #h = event.get("hash", None)
     sigma = event.get("sigma", 10)
+    change_fullimage = event.get("sigma", False)
 
     filename_set = os.path.splitext(src_filename)
     basename = filename_set[0]
@@ -60,6 +62,8 @@ def lambda_handler(event, context):
 
     down_filename='/tmp/my_image{}'.format(ext)
     conv_filename='/tmp/sketchify{}'.format(ext)
+    down_jsonfile='/tmp/sketchify.json'
+
     if os.path.exists(down_filename):
         os.remove(down_filename)
     if os.path.exists(conv_filename):
@@ -95,7 +99,7 @@ def lambda_handler(event, context):
     # basename = filename_set[0]
     # ext = filename_set[1]
     sketchify_filename='public/{}/sketchify{}'.format(h, ext)
-
+    sketchify_paramfile='public/{}/sketchify.json'.format(h) 
     #
     # Grayscale.
     #
@@ -117,6 +121,16 @@ def lambda_handler(event, context):
     # s3 = boto3.client('s3')
     #
     s3.upload_file(conv_filename, BUCKET_NAME, sketchify_filename)
+
+    #
+    # Save params for sketchify whenever converting fullimage.
+    #
+    j = {'sigma': sigma}
+    if change_fullimage != False:
+        with open(down_jsonfile,'w') as f:
+            f.write(json.dumps(j))
+        s3.upload_file(down_jsonfile, BUCKET_NAME, sketchify_paramfile)
+
 
     images = {
         "source" : S3_URL.format(
