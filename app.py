@@ -58,7 +58,7 @@ def lambda_handler(event, context):
     filename_set = os.path.splitext(src_filename)
     basename = filename_set[0]
     ext = filename_set[1]
-    h = basename.split("/")[0]
+    h = basename.split("/")[1]
 
     down_filename='/tmp/my_image{}'.format(ext)
     conv_filename='/tmp/sketchify{}'.format(ext)
